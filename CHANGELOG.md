@@ -411,6 +411,8 @@ By @jimblandy in [#3254](https://github.com/gfx-rs/wgpu/pull/3254).
 - Implemented `TextureFormat::Stencil8`, allowing for stencil testing without depth components. By @Dinnerbone in [#3343](https://github.com/gfx-rs/wgpu/pull/3343)
 - Implemented `add_srgb_suffix()` for `TextureFormat` for converting linear formats to sRGB. By @Elabajaba in [#3419](https://github.com/gfx-rs/wgpu/pull/3419)
 - Zero-initialize workgroup memory. By @teoxoy in [#3174](https://github.com/gfx-rs/wgpu/pull/3174)
+- Add `create_sampler_from_hal` in `wgpu` for native platforms. By @i509VCB in [#3114](https://github.com/gfx-rs/wgpu/pull/3114)
+- Add `create_texture_view_from_hal` in `wgpu` for native platforms. By @i509VCB in [#3114](https://github.com/gfx-rs/wgpu/pull/3114)
 
 #### GLES
 
@@ -421,6 +423,9 @@ By @jimblandy in [#3254](https://github.com/gfx-rs/wgpu/pull/3254).
 #### Vulkan
 
 - Add `SHADER_INT16` feature to enable the `shaderInt16` VkPhysicalDeviceFeature. By @Elabajaba in [#3401](https://github.com/gfx-rs/wgpu/pull/3401)
+- Add a way to create a sampler from a `vk::Sampler`. By @i509VCB in [#3114](https://github.com/gfx-rs/wgpu/pull/3114)
+- Add a way to create a texture view from a `vk::ImageView`. By @i509VCB in [#3114](https://github.com/gfx-rs/wgpu/pull/3114)
+- Add a way to access the raw `vk::ImageView` from a TextureView. By @i509VCB in [#3114](https://github.com/gfx-rs/wgpu/pull/3114)
 
 #### WebGPU
 
