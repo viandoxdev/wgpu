@@ -1322,6 +1322,12 @@ impl crate::Device<super::Api> for super::Device {
     }
 }
 
+impl crate::Texture<super::Api> for super::Texture {
+    fn is_external(&self) -> bool {
+        false
+    }
+}
+
 #[cfg(all(
     target_arch = "wasm32",
     feature = "fragile-send-sync-non-atomic-wasm",

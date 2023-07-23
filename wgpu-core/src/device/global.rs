@@ -661,6 +661,8 @@ impl<G: GlobalIdentityHandlerFactory> Global<G> {
                 Err(error) => break error,
             };
 
+            let is_external = hal_texture.is_external();
+
             let mut texture = device.create_texture_from_hal(
                 hal_texture,
                 conv::map_texture_usage(desc.usage, desc.format.into()),
@@ -680,11 +682,17 @@ impl<G: GlobalIdentityHandlerFactory> Global<G> {
             let id = fid.assign(texture, &mut token);
             log::info!("Created texture {:?} with {:?}", id, desc);
 
-            device.trackers.lock().textures.insert_single(
-                id.0,
-                ref_count,
-                hal::TextureUses::UNINITIALIZED,
-            );
+            let mut uses = hal::TextureUses::UNINITIALIZED;
+
+            if is_external {
+                uses |= hal::TextureUses::EXTERNAL;
+            }
+
+            device
+                .trackers
+                .lock()
+                .textures
+                .insert_single(id.0, ref_count, uses);
 
             return (id.0, None);
         };

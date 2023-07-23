@@ -551,6 +551,13 @@ pub trait CommandEncoder<A: Api>: WasmNotSend + WasmNotSync + fmt::Debug {
     unsafe fn dispatch_indirect(&mut self, buffer: &A::Buffer, offset: wgt::BufferAddress);
 }
 
+pub trait Texture<A: Api>: fmt::Debug + Send + Sync {
+    /// Whether this texture originates from external memory.
+    ///
+    /// This indicates whether the texture may have the `EXTERNAL` usage.
+    fn is_external(&self) -> bool;
+}
+
 bitflags!(
     /// Instance initialization flags.
     #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -766,9 +773,16 @@ bitflags::bitflags! {
 
         /// Flag used by the wgpu-core texture tracker to say a texture is in different states for every sub-resource
         const COMPLEX = 1 << 10;
+
+        /// Flag used by the wgpu-core texture tracker to say a texture was imported from external memory.
+        ///
+        /// In the Vulkan backend, this indicates the texture needs to be transferred from an external queue
+        /// family to the graphics queue family.
+        const EXTERNAL = 1 << 11;
+
         /// Flag used by the wgpu-core texture tracker to say that the tracker does not know the state of the sub-resource.
         /// This is different from UNINITIALIZED as that says the tracker does know, but the texture has not been initialized.
-        const UNKNOWN = 1 << 11;
+        const UNKNOWN = 1 << 12;
     }
 }
 
