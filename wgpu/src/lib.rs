@@ -2564,6 +2564,37 @@ impl Device {
         }
     }
 
+    /// Creates a [`Sampler`] from a wgpu-hal Sampler.
+    ///
+    /// # Safety
+    ///
+    /// - `hal_sampler` must be created from this device internal handle
+    /// - `hal_sampler` must be created respecting `desc`
+    /// - `hal_sampler` must be initialized
+    #[cfg(any(not(target_arch = "wasm32"), feature = "emscripten"))]
+    pub unsafe fn create_sampler_from_hal<A: wgc::hal_api::HalApi>(
+        &self,
+        hal_sampler: A::Sampler,
+        desc: &SamplerDescriptor,
+    ) -> Sampler {
+        let id = unsafe {
+            self.context
+                .as_any()
+                .downcast_ref::<crate::backend::Context>()
+                .unwrap()
+                .create_sampler_from_hal::<A>(
+                    hal_sampler,
+                    self.data.as_ref().downcast_ref().unwrap(),
+                    desc,
+                )
+        };
+        Sampler {
+            context: Arc::clone(&self.context),
+            data: Box::new(()),
+            id: ObjectId::from(id),
+        }
+    }
+
     /// Creates a new [`QuerySet`].
     pub fn create_query_set(&self, desc: &QuerySetDescriptor) -> QuerySet {
         let (id, data) =
@@ -2991,6 +3022,38 @@ impl Texture {
             context: Arc::clone(&self.context),
             id,
             data,
+        }
+    }
+
+    /// Creates a [`TextureView`] from a wgpu-hal TextureView.
+    ///
+    /// # Safety
+    ///
+    /// - `hal_texture_view` must be created from this device internal handle
+    /// - `hal_texture_view` must be created from this texture
+    /// - `hal_texture_view` must be created respecting `desc`
+    /// - `hal_texture_view` must be initialized
+    #[cfg(any(not(target_arch = "wasm32"), feature = "emscripten"))]
+    pub unsafe fn create_view_from_hal<A: wgc::hal_api::HalApi>(
+        &self,
+        hal_texture_view: A::TextureView,
+        desc: &TextureViewDescriptor,
+    ) -> TextureView {
+        let id = unsafe {
+            self.context
+                .as_any()
+                .downcast_ref::<crate::backend::Context>()
+                .unwrap()
+                .create_texture_view_from_hal::<A>(
+                    self.data.as_ref().downcast_ref().unwrap(),
+                    hal_texture_view,
+                    desc,
+                )
+        };
+        TextureView {
+            context: Arc::clone(&self.context),
+            data: Box::new(()),
+            id: ObjectId::from(id),
         }
     }
 

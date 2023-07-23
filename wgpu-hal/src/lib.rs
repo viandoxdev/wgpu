@@ -165,7 +165,7 @@ pub trait Api: Clone + Sized {
     type CommandBuffer: WasmNotSend + WasmNotSync + fmt::Debug;
 
     type Buffer: fmt::Debug + WasmNotSend + WasmNotSync + 'static;
-    type Texture: fmt::Debug + WasmNotSend + WasmNotSync + 'static;
+    type Texture: Texture<Self> + 'static;
     type SurfaceTexture: fmt::Debug + WasmNotSend + WasmNotSync + Borrow<Self::Texture>;
     type TextureView: fmt::Debug + WasmNotSend + WasmNotSync;
     type Sampler: fmt::Debug + WasmNotSend + WasmNotSync;
@@ -551,7 +551,7 @@ pub trait CommandEncoder<A: Api>: WasmNotSend + WasmNotSync + fmt::Debug {
     unsafe fn dispatch_indirect(&mut self, buffer: &A::Buffer, offset: wgt::BufferAddress);
 }
 
-pub trait Texture<A: Api>: fmt::Debug + Send + Sync {
+pub trait Texture<A: Api>: WasmNotSend + WasmNotSync + fmt::Debug {
     /// Whether this texture originates from external memory.
     ///
     /// This indicates whether the texture may have the `EXTERNAL` usage.
@@ -679,6 +679,16 @@ impl From<wgt::TextureFormat> for FormatAspects {
                 Self::DEPTH | Self::STENCIL
             }
             _ => Self::COLOR,
+        }
+    }
+}
+
+impl From<wgt::TextureAspect> for FormatAspects {
+    fn from(aspect: wgt::TextureAspect) -> Self {
+        match aspect {
+            wgt::TextureAspect::All => Self::all(),
+            wgt::TextureAspect::DepthOnly => Self::DEPTH,
+            wgt::TextureAspect::StencilOnly => Self::STENCIL,
         }
     }
 }

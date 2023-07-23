@@ -18,7 +18,7 @@ use crate::{
     FastHashMap, Label, LabelHelpers as _, Stored,
 };
 
-use hal::{CommandEncoder as _, Device as _};
+use hal::{CommandEncoder as _, Device as _, Texture};
 use smallvec::SmallVec;
 
 use wgt::{BufferAddress, TextureFormat};
@@ -915,6 +915,66 @@ impl<G: GlobalIdentityHandlerFactory> Global<G> {
         (id, Some(error))
     }
 
+    /// # Safety
+    ///
+    /// - `hal_texture_view` must be created from `texture_id` corresponding raw handle.
+    /// - `hal_texture_view` must be created respecting `desc`
+    /// - `hal_texture_view` must be initialized
+    pub unsafe fn create_texture_view_from_hal<A: HalApi>(
+        &self,
+        hal_texture_view: A::TextureView,
+        texture_id: id::TextureId,
+        desc: &resource::TextureViewDescriptor,
+        id_in: Input<G, id::TextureViewId>,
+    ) -> (id::TextureViewId, Option<resource::CreateTextureViewError>) {
+        profiling::scope!("Device::create_texture_view_from_hal");
+
+        let hub = A::hub(self);
+        let mut token = Token::root();
+        let fid = hub.texture_views.prepare(id_in);
+
+        let (device_guard, mut token) = hub.devices.read(&mut token);
+        let (texture_guard, mut token) = hub.textures.read(&mut token);
+
+        let error = loop {
+            let texture = match texture_guard.get(texture_id) {
+                Ok(texture) => texture,
+                Err(_) => break resource::CreateTextureViewError::InvalidTexture,
+            };
+            let device = &device_guard[texture.device_id.value];
+
+            // NB: Any change done through the raw texture view handle will not be
+            // recorded in the replay
+            #[cfg(feature = "trace")]
+            if let Some(ref trace) = device.trace {
+                trace.lock().add(trace::Action::CreateTextureView {
+                    id: fid.id(),
+                    parent_id: texture_id,
+                    desc: desc.clone(),
+                });
+            }
+
+            let view = match device.create_texture_view_from_hal(
+                texture,
+                texture_id,
+                hal_texture_view,
+                desc,
+            ) {
+                Ok(view) => view,
+                Err(e) => break e,
+            };
+
+            let ref_count = view.life_guard.add_ref();
+            let id = fid.assign(view, &mut token);
+
+            device.trackers.lock().views.insert_single(id, ref_count);
+            return (id.0, None);
+        };
+
+        let id = fid.assign_error(desc.label.borrow_or_default(), &mut token);
+        (id, Some(error))
+    }
+
     pub fn texture_view_label<A: HalApi>(&self, id: id::TextureViewId) -> String {
         A::hub(self).texture_views.label_for_resource(id)
     }
@@ -997,6 +1057,53 @@ impl<G: GlobalIdentityHandlerFactory> Global<G> {
                 Ok(sampler) => sampler,
                 Err(e) => break e,
             };
+            let ref_count = sampler.life_guard.add_ref();
+            let id = fid.assign(sampler, &mut token);
+
+            device.trackers.lock().samplers.insert_single(id, ref_count);
+
+            return (id.0, None);
+        };
+
+        let id = fid.assign_error(desc.label.borrow_or_default(), &mut token);
+        (id, Some(error))
+    }
+
+    /// # Safety
+    ///
+    /// - `hal_texture` must be created from `device_id` corresponding raw handle.
+    /// - `hal_texture` must be created respecting `desc`
+    /// - `hal_texture` must be initialized
+    pub unsafe fn create_sampler_from_hal<A: HalApi>(
+        &self,
+        hal_sampler: A::Sampler,
+        device_id: DeviceId,
+        desc: &resource::SamplerDescriptor,
+        id_in: Input<G, id::SamplerId>,
+    ) -> (id::SamplerId, Option<resource::CreateSamplerError>) {
+        profiling::scope!("Device::create_sampler");
+
+        let hub = A::hub(self);
+        let mut token = Token::root();
+        let fid = hub.samplers.prepare(id_in);
+
+        let (device_guard, mut token) = hub.devices.read(&mut token);
+        let error = loop {
+            let device = match device_guard.get(device_id) {
+                Ok(device) => device,
+                Err(_) => break DeviceError::Invalid.into(),
+            };
+
+            // NB: Any change done through the raw sampler handle will not be
+            // recorded in the replay
+            #[cfg(feature = "trace")]
+            if let Some(ref trace) = device.trace {
+                trace
+                    .lock()
+                    .add(trace::Action::CreateSampler(fid.id(), desc.clone()));
+            }
+
+            let sampler = device.create_sampler_from_hal(hal_sampler, device_id, desc);
             let ref_count = sampler.life_guard.add_ref();
             let id = fid.assign(sampler, &mut token);
 
