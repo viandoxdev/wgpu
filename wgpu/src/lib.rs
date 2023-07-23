@@ -2218,11 +2218,20 @@ impl Device {
         hal_sampler: A::Sampler,
         desc: &SamplerDescriptor,
     ) -> Sampler {
+        let id = self
+            .context
+            .as_any()
+            .downcast_ref::<crate::backend::Context>()
+            .unwrap()
+            .create_sampler_from_hal::<A>(
+                hal_sampler,
+                self.data.as_ref().downcast_ref().unwrap(),
+                desc,
+            );
         Sampler {
             context: Arc::clone(&self.context),
-            id: self
-                .context
-                .create_sampler_from_hal::<A>(hal_sampler, &self.id, desc),
+            data: Box::new(()),
+            id: ObjectId::from(id),
         }
     }
 
@@ -2670,11 +2679,21 @@ impl Texture {
         hal_texture_view: A::TextureView,
         desc: &TextureViewDescriptor,
     ) -> TextureView {
+        let id = unsafe {
+            self.context
+                .as_any()
+                .downcast_ref::<crate::backend::Context>()
+                .unwrap()
+                .create_texture_view_from_hal::<A>(
+                    &self.data.as_ref().downcast_ref().unwrap(),
+                    hal_texture_view,
+                    desc,
+                )
+        };
         TextureView {
             context: Arc::clone(&self.context),
-            id: self
-                .context
-                .create_texture_view_from_hal::<A>(&self.id, hal_texture_view, desc),
+            data: Box::new(()),
+            id: ObjectId::from(id),
         }
     }
 

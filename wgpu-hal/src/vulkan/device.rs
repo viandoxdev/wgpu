@@ -711,7 +711,7 @@ impl super::Device {
         desc: &crate::TextureViewDescriptor,
         drop_guard: Option<crate::DropGuard>,
     ) -> super::TextureView {
-        let subresource_range = conv::map_subresource_range(&desc.range, texture.aspects);
+        let subresource_range = conv::map_subresource_range(&desc.range, texture.format);
         let layers =
             NonZeroU32::new(subresource_range.layer_count).expect("Unexpected zero layer count");
 
@@ -729,6 +729,11 @@ impl super::Device {
             raw_image_flags: texture.raw_flags,
             view_usage,
             view_format: desc.format,
+            raw_view_formats: texture
+                .view_formats
+                .iter()
+                .map(|tf| self.shared.private_caps.map_texture_format(*tf))
+                .collect(),
         };
 
         super::TextureView {

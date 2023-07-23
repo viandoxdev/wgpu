@@ -682,6 +682,16 @@ impl From<wgt::TextureFormat> for FormatAspects {
     }
 }
 
+impl From<wgt::TextureAspect> for FormatAspects {
+    fn from(aspect: wgt::TextureAspect) -> Self {
+        match aspect {
+            wgt::TextureAspect::All => Self::all(),
+            wgt::TextureAspect::DepthOnly => Self::DEPTH,
+            wgt::TextureAspect::StencilOnly => Self::STENCIL,
+        }
+    }
+}
+
 bitflags!(
     #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
     pub struct MemoryFlags: u32 {

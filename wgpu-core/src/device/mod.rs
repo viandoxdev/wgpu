@@ -1333,11 +1333,11 @@ impl<A: HalApi> Device<A> {
             },
         };
 
-        let mip_count = desc.range.mip_level_count.map_or(1, |count| count.get());
+        let mip_count = desc.range.mip_level_count.unwrap_or(1);
         let required_level_count = desc.range.base_mip_level.saturating_add(mip_count);
 
         let required_layer_count = match desc.range.array_layer_count {
-            Some(count) => desc.range.base_array_layer.saturating_add(count.get()),
+            Some(count) => desc.range.base_array_layer.saturating_add(count),
             None => match view_dim {
                 wgt::TextureViewDimension::D1
                 | wgt::TextureViewDimension::D2
@@ -1482,10 +1482,10 @@ impl<A: HalApi> Device<A> {
                 range: hal_desc.range,
             },
             format_features: texture.format_features,
-            extent,
             samples: texture.desc.sample_count,
             selector,
             life_guard: LifeGuard::new(desc.label.borrow_or_default()),
+            render_extent: Ok(extent),
         })
     }
 
