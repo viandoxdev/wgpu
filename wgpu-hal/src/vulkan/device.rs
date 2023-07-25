@@ -673,12 +673,12 @@ impl super::Device {
 
         if desc.usage.contains(crate::TextureUses::EXTERNAL) {
             wgt::strict_assert!(
-                external_queue_family_index.is_none(),
+                external_queue_family_index.is_some(),
                 "Texture has TextureUse::EXTERNAL, but does not specify the owning queue family"
             );
         }
 
-        if external_queue_family_index.is_none() {
+        if external_queue_family_index.is_some() {
             wgt::strict_assert!(
                 desc.usage.contains(crate::TextureUses::EXTERNAL),
                 "Texture specifies external queue family ownership but does not have TextureUse::EXTERNAL"
